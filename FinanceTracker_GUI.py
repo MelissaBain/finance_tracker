@@ -1,7 +1,5 @@
-import tkinter
+import tkinter as tk
 import csv
-
-
 import datetime
 import pandas as pd
 
@@ -81,7 +79,7 @@ class FinanceTracker:
 			totalDays = leapYearDays[self.curMonth-1]
 		else:
 			totalDays = monthDays[self.curMonth-1]
-		return (totalDays-self.curDate)/totalDays
+		return (totalDays-self.curDate+1)/totalDays
 	
 	def readSavings(self):
 		with open("currentTotals.txt", 'r') as f:
@@ -138,39 +136,52 @@ class FinanceTracker:
 			print("Please manually update since over a month has passed")
 			return False
 			
-	def logExpense(self):
-		print("Please enter one of the following categories:\n")
-		for key in self.keyDictionary.keys():
-			print("Type ", key, " for category ", self.keyDictionary[key])
-		key = input("\nWhich number category would you like?\n")
-		category = self.keyDictionary[int(key)]
-		amount = float(input("How much did you spend?\n"))
+	def logExpense(self, category, addition=False):
+		amount = tk.StringVar()
+		e = tk.Entry(self.tkBudget, textvariable = amount)
+		e.grid(row=1,column=3)
+		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(float(e.get()),category, addition))
+		button.grid(row=1,column=4)
+			
+	def logExpense_helper(self, amount,category,addition):
+		if addition:
+			amount*=-1
 		self.currentValues[category] -= amount 
 		self.currentValues[category] = round(self.currentValues[category],2)
+		self.saveUpdates()
+		self.displayBudget()
 
-	def updateCategory(self, name):
-		categoryUpdate = tkinter.Tk()
-		label = tkinter.Label(categoryUpdate,text="Category: " + name)
-		label.grid(row=0,column=0)
-		button=tkinter.Button(categoryUpdate, text= "Log Expense", command=self.logExpense)
-		button.grid(row=1,column=0)
-		button = tkinter.Button(categoryUpdate, text="Log One-time Windfall")
-		button.grid(row=2,column=0)
-		button=tkinter.Button(categoryUpdate, text= "Update Monthly Budget")
-		button.grid(row=3,column=0)
-		button = tkinter.Button(categoryUpdate, text= "Delete this category")
-		button.grid(row=4, column = 0)
+	def updateCategory(self, category):
+		label = tk.Label(self.tkBudget,text="Category: " + category)
+		label.grid(row=0,column=2)
+		button=tk.Button(self.tkBudget, text= "Log Expense", command= lambda: self.logExpense(category))
+		button.grid(row=1,column=2)
+		button = tk.Button(self.tkBudget, text="Log One-time Windfall", command= lambda: self.logExpense(category, True))
+		button.grid(row=2,column=2)
+		button=tk.Button(self.tkBudget, text= "Update Monthly Allowance", command = lambda: self.changeBudget(category))
+		button.grid(row=3,column=2)
+		button = tk.Button(self.tkBudget, text= "Delete this category")
+		button.grid(row=4, column = 2)
 	
+	def clearFrame(self):
+		gridItems = self.tkBudget.grid_slaves()
+		for item in gridItems:
+			item.destroy()
+			
+	def changeBudget(self, category):
+		print("change the ammount")
+     	
 	def displayBudget(self):
+		self.clearFrame()
 		counter = 0
 		for key in self.currentValues:
-			button=tkinter.Button(self.tkBudget, width=8,height=2, text=" " + key, anchor="w",relief="groove", command = lambda: self.updateCategory(key))
+			button=tk.Button(self.tkBudget, width=8,height=2, text=" " + key, anchor="w",relief="groove", command = lambda key=key: self.updateCategory(key))
 			button.grid(row=counter,column=0)
-			label = tkinter.Label(self.tkBudget, width=5, height=2, text = self.currentValues[key], relief="groove")
+			label = tk.Label(self.tkBudget, width=5, height=2, text = self.currentValues[key], relief="groove")
 			label.grid(row=counter, column=1)
 			counter+=1
-		button = tkinter.Button(self.tkBudget, text = "Add new category")
-		button.grid(row=counter, column=2)
+		button = tk.Button(self.tkBudget, text = "Add new category")
+		button.grid(row=counter, column=0)
 		
 	
 	def saveUpdates(self):
@@ -236,7 +247,7 @@ class FinanceTracker:
 		self.saveUpdates()
 
 if __name__ == '__main__':
-	budget = tkinter.Tk()
+	budget = tk.Tk()
 	FT = FinanceTracker(budget)
 	FT.displayBudget()
 	keepGoing = True
@@ -253,8 +264,8 @@ if __name__ == '__main__':
 #    reader = csv.reader(file)
 
 def categoryClick():
-	test = tkinter.Tk()
-	label=tkinter.Button(test, text ="yay")
+	test = tk.Tk()
+	label=tk.Button(test, text ="yay")
 	label.grid(row=0,column=0)
 	
 # with open("currentTotals.txt", 'r') as f:
