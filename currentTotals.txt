@@ -1,2 +1,0 @@
-Gas,28.65
-Groceries,0.32
