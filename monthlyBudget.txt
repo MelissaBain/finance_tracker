@@ -1,2 +1,0 @@
-Gas,20.0
-Groceries,10.0
