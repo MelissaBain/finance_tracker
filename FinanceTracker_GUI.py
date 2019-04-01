@@ -7,6 +7,10 @@ class FinanceTracker:
 
 	def __init__(self, tkBudget):
 		self.tkBudget = tkBudget
+		self.budgetFrame = tk.Frame(self.tkBudget)
+		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
+		self.commandFrame = tk.Frame(self.tkBudget)
+		self.commandFrame.grid(row=1,column=0,sticky='nsew')
 		now = datetime.datetime.now()
 		self.curDate = now.day
 		self.curMonth = now.month
@@ -18,59 +22,14 @@ class FinanceTracker:
 			self.readSavings()
 			self.loadBudget()
 		except FileNotFoundError:
-			self.configure()
-			self.readSavings()
-			self.loadBudget()
+			None
+
 		self.update()
+		self.curCategory = None
 
-	def configure(self):
-		
-		categories = input("Please type the budget categories you wish to track, separated by a comma. Press enter when done.\n")
-		categories = [x.strip() for x in categories.split(',')]
-		for category in categories:
-			self.currentValues[category] = 0
-		
-		corrections = 'y'
-		while corrections == 'y':
-		
-			print("\nThese are the categories you entered:\n",list(self.currentValues.keys()))
-			corrections = input("\nIs there anything you need to change or add? If yes, type 'y' & press enter. Otherwise just press enter.\n")
-			if corrections == 'y':
-				deletions = input("Are there any categories you wish to delete? (You will have the chance to add replacements shortly.)\nIf yes, type 'y' press enter. Otherwise just press enter.\n")
-				if deletions == 'y':
-					categoryToDelete = input("What category would you like to delete? Please type the name as previously recorded and then press enter.\n")
-					if categoryToDelete in self.currentValues: 
-						del self.currentValues[categoryToDelete]
-				additions = input("Are there any categories you wish to add? If so enter them separated by commas & press enter. Otherwise just press enter.\n")
-				if additions!= "":
-					additions = [x.strip() for x in additions.split(',')]
-					for addition in additions:
-						self.currentValues[addition]=0
-		
-		self.setBudget()
-		self.updateDate()
-		
-		
-	def setBudget(self):
-		monthDays = [31,28,31,30,31,30,31,31,30,31,30,31]
-		leapYearDays = [31,29,31,30,31,30,31,31,30,31,30,31]
-		if self.curYear%4 == 0:
-			totalDays = leapYearDays[self.curMonth-1]
-		else:
-			totalDays = monthDays[self.curMonth-1]
-		
-		currentTotals = open('currentTotals.txt', 'w')
-		budget = open('monthlyBudget.txt', 'w')
-		
-		proportion = self.proportionalUpdate()
-		
-		for key in self.currentValues.keys():
-			budgetValue = input("\nHow much would you like to be contributed each month to "+key+"?\n")
-			budget.write(key + ","+budgetValue+'\n')
-			currentTotals.write(key + ","+str(round(float(budgetValue)*proportion,2))+'\n')
 
-		currentTotals.close()
-		budget.close()
+		
+
 	
 	def proportionalUpdate(self):
 		monthDays = [31,28,31,30,31,30,31,31,30,31,30,31]
@@ -89,9 +48,7 @@ class FinanceTracker:
 				values = float(values.strip("\n"))
 				self.currentValues[key] = values
 		counter = 0
-# 		for key in self.currentValues.keys():
-# 			self.keyDictionary[counter] = key
-# 			counter+=1
+
 
 	def update(self):
 		keepUpdating = self.checkDate()
@@ -122,7 +79,10 @@ class FinanceTracker:
 		lastUpdate.close()
 		
 	def checkDate(self):
-		lastUpdate = open("last_update.txt", "r")
+		try:
+			lastUpdate = open("last_update.txt", "r")
+		except:
+			return False
 		date = lastUpdate.read().split(" ")
 		lastMonth = int(date[0])
 		lastYear = int(date[1])
@@ -136,12 +96,12 @@ class FinanceTracker:
 			print("Please manually update since over a month has passed")
 			return False
 			
-	def logExpense(self, category, addition=False):
+	def logExpense(self, addition=False):
 		self.clearColumns(4)
 		amount = tk.StringVar()
 		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
 		e.grid(row=1,column=4)
-		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),category, addition))
+		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
 		button.grid(row=1,column=5)
 			
 	def logExpense_helper(self, amount,category,addition):
@@ -150,45 +110,51 @@ class FinanceTracker:
 			if addition:
 				amount*=-1
 			self.currentValues[category] -= round(amount,2)
+
 			self.displayBudget()
-		
 		except:
 			None
 
-	def updateCategory(self, category):
-		self.displayBudget()
-		label = tk.Label(self.tkBudget,text="Selected Category: " + category)
-		label.grid(row=0,column=3)
-		button=tk.Button(self.tkBudget, text= "Log Expense", command= lambda: self.logExpense(category))
-		button.grid(row=1,column=3)
-		button = tk.Button(self.tkBudget, text="Log One-time Windfall", command= lambda: self.logExpense(category, True))
-		button.grid(row=2,column=3)
-		button=tk.Button(self.tkBudget, text= "Update Monthly Allowance", command = lambda: self.changeBudget(category))
-		button.grid(row=3,column=3)
-		button = tk.Button(self.tkBudget, text= "Delete this category", command = lambda: self.deleteCategory(category))
-		button.grid(row=4, column = 3)
+	def updateCategory(self):
+		for col in range(1):
+			tk.Grid.columnconfigure(self.commandFrame,col,weight=1)
+			for row in range(4):
+				tk.Grid.rowconfigure(self.commandFrame,row,weight=1)
+
+		button=tk.Button(self.commandFrame, text= "Log Expense", command= lambda: self.logExpense())
+		button.grid(row=0,column=0,sticky='nsew')
+		button = tk.Button(self.commandFrame, text="Log One-time Windfall", command= lambda: self.logExpense(True))
+		button.grid(row=1,column=0,sticky='nsew')
+		button=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
+		button.grid(row=2,column=0,sticky='nsew')
+		button = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
+		button.grid(row=3, column = 0,sticky='nsew')
 	
 	def addCategory(self):
 		self.clearColumns(3)
-		label = tk.Label(self.tkBudget, text="Enter name of category:")
-		label.grid(row=0,column=3)
+		addWindow = tk.Tk()
+		addWindow.title("Add a Category")
+		label = tk.Label(addWindow, text="Enter name of category:")
+		label.grid(row=0,column=0)
 		name = tk.StringVar()
-		e1 = tk.Entry(self.tkBudget, textvariable=name)
-		e1.grid(row=1,column=3)
-		label = tk.Label(self.tkBudget, text="Enter monthly budget:")
-		label.grid(row=3,column=3)
+		e1 = tk.Entry(addWindow, textvariable=name)
+		e1.grid(row=1,column=0)
+		label = tk.Label(addWindow, text="Enter monthly budget:")
+		label.grid(row=3,column=0)
 		amount = tk.StringVar()
-		e2 = tk.Entry(self.tkBudget, textvariable=amount)
-		e2.grid(row=4,column=3)
-		button = tk.Button(self.tkBudget, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get()))
-		button.grid(row=5,column=3)
+		e2 = tk.Entry(addWindow, textvariable=amount)
+		e2.grid(row=4,column=0)
+		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow))
+		button.grid(row=5,column=0)
+# 		addWindow.bind('<Return>', self.addCategory_helper(e1.get(),e2.get(),addWindow))
 		
-	def addCategory_helper(self, name, amount):
+	def addCategory_helper(self, name, amount,window):
 		try:
 			amount = float(amount)
 			if name!="":
 				self.budget[name]=round(amount,2)
 				self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
+			window.destroy()
 			self.displayBudget()
 		except:
 			self.displayBudget()
@@ -198,14 +164,11 @@ class FinanceTracker:
 		for item in gridItems:
 			item.destroy()
 			
-	def changeBudget(self, category):
-		self.clearColumns(4)
-		label = tk.Label(self.tkBudget,text="Current Monthly Budget: " + str(self.budget[category]))
-		label.grid(row=0,column=4)
+	def changeBudget(self):
 		amount = tk.StringVar()
 		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
 		e.grid(row=1,column=4)
-		button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),category))
+		button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),self.curCategory))
 		button.grid(row=2,column=4)
 		
 	def changeBudget_helper(self, amount, category):
@@ -218,46 +181,49 @@ class FinanceTracker:
 		except:
 			None
 					
-	def deleteCategory(self,category):
-		self.clearColumns(4)
-		label = tk.Label(self.tkBudget,text="Are you sure?")
-		label.grid(row=0,column=4)
-		button = tk.Button(self.tkBudget, text="Yes", command= lambda: self.deleteCategory_helper(category))
-		button.grid(row=1, column=4)
+	def deleteCategory(self):
+		confirmWindow = tk.Tk()
+		confirmWindow.title("Confirmation")
+		label = tk.Label(confirmWindow,text="Are you sure?")
+		label.grid(row=0,column=0)
+		button = tk.Button(confirmWindow, text="Yes", command= lambda: self.deleteCategory_helper(self.curCategory,confirmWindow))
+		button.grid(row=1, column=0)
 		
-	def deleteCategory_helper(self, category):
+	def deleteCategory_helper(self, category,window):
 		del self.budget[category]
 		del self.currentValues[category]
+		window.destroy()
+		self.budgetFrame.destroy()
 		self.displayBudget()
      	
 	def displayBudget(self):
-		self.clearFrame()
-		frame = tk.Frame(self.tkBudget)
-		frame.grid(row=0,column=0,sticky='nsew')
+		self.budgetFrame = tk.Frame(self.tkBudget)
+		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
 		for col in range(3):
-			tk.Grid.columnconfigure(frame,col,weight=1)
-			for row in range(len(self.currentValues.keys())):
-				tk.Grid.rowconfigure(frame,row,weight=1)
-		label=tk.Label(frame, text = "Category")
+			tk.Grid.columnconfigure(self.budgetFrame,col,weight=1)
+			for row in range(len(self.currentValues.keys())+1):
+				tk.Grid.rowconfigure(self.budgetFrame,row,weight=1)
+		label=tk.Label(self.budgetFrame, text = "Category")
 		label.grid(row = 0, column = 0,sticky='nsew')
-		label = tk.Label(self.tkBudget, text = "Available Balance")
+		label = tk.Label(self.budgetFrame, text = "Available Balance")
 		label.grid(row=0,column=1,sticky='nsew')
-		label = tk.Label(self.tkBudget, text = "Monthly Allowance")
+		label = tk.Label(self.budgetFrame, text = "Monthly Allowance")
 		label.grid(row=0,column=2,sticky='nsew')
 		counter = 1
-		category = tk.StringVar()
 		for key in self.currentValues:
-			button=tk.Radiobutton(self.tkBudget,indicatoron = 0, text=" " + key, variable=category, value = key, anchor="w",relief="groove", command = lambda key=key: self.updateCategory(category.get()))
+			button=tk.Radiobutton(self.budgetFrame,indicatoron = 0, text=" " + key, value = key, anchor="w",relief="groove", command = lambda key=key: self.setCurCategory(key))
 			button.grid(row=counter,column=0,sticky='nsew')
-			label = tk.Label(self.tkBudget, text = "$"+str(round(self.currentValues[key],2)), relief="groove")
+			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.currentValues[key],2)), relief="groove")
 			label.grid(row=counter, column=1,sticky='nsew')
-			label = tk.Label(self.tkBudget, text = "$"+str(round(self.budget[key],2)), relief="groove")
+			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.budget[key],2)), relief="groove", anchor="e")
 			label.grid(row=counter, column=2,sticky='nsew')
 			counter+=1
-		button = tk.Button(self.tkBudget, text = "Add new category", command = self.addCategory)
+		button = tk.Button(self.budgetFrame, text = "Add new category", command = self.addCategory)
 		button.grid(row=counter, column=0)
 	
-# 	def setCurCategory(
+	def setCurCategory(self, category):
+		self.curCategory = category
+
 	def clearColumns(self, column):
 		for item in self.tkBudget.grid_slaves():
 			if int(item.grid_info()["column"]) >= column:
@@ -274,10 +240,14 @@ class FinanceTracker:
 
 if __name__ == '__main__':
 	budget = tk.Tk()
-	tk.Grid.rowconfigure(budget, 0, weight=1)
-	tk.Grid.columnconfigure(budget, 0, weight=1)
+	budget.title("My Budget Tracker")
+	for row in range(3):
+		tk.Grid.rowconfigure(budget, row, weight=1)
+		for col in range(1):
+			tk.Grid.columnconfigure(budget, col, weight=1)
 	FT = FinanceTracker(budget)
 	FT.displayBudget()
+	FT.updateCategory()
 
 	budget.mainloop()
 

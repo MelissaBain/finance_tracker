@@ -1,3 +1,2 @@
-gas,30.54
-groceries,1.4800000000000004
-Vacation,903.23
+Gas,28.65
+Groceries,0.32
