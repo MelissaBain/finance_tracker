@@ -295,29 +295,4 @@ if __name__ == '__main__':
 	FT.saveBudget()
 	FT.updateDate()
 	
-	
-# root = tkinter.Tk()
 
-# open file
-# with open("test.csv", newline = "") as file:
-#    reader = csv.reader(file)
-
-def categoryClick():
-	test = tk.TK()
-	label=tk.Button(test, text ="yay")
-	label.grid(row=0,column=0)
-	
-# with open("currentTotals.txt", 'r') as f:
-# 	counter = 0
-# 	for line in f:
-# 		items = line.split(",")
-# 		key, value = items[0], items[1]
-# 		value = float(value.strip("\n"))
-# 		label=tkinter.Button(root, width=8,height=2, text=" " + key, anchor="w",relief="groove", command = categoryClick)
-# 		label.grid(row=counter,column=0)
-# 		label = tkinter.Label(root, width=5, height=2, text = value, relief="groove")
-# 		label.grid(row=counter, column=1)
-# 		counter+=1
-# 
-# root.mainloop()
-	
