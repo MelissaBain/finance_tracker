@@ -1,0 +1,3 @@
+gas,12.0
+groceries,23.0
+Vacation,100.0

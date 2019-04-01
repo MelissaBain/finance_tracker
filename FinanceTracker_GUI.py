@@ -89,9 +89,9 @@ class FinanceTracker:
 				values = float(values.strip("\n"))
 				self.currentValues[key] = values
 		counter = 0
-		for key in self.currentValues.keys():
-			self.keyDictionary[counter] = key
-			counter+=1
+# 		for key in self.currentValues.keys():
+# 			self.keyDictionary[counter] = key
+# 			counter+=1
 
 	def update(self):
 		keepUpdating = self.checkDate()
@@ -137,31 +137,61 @@ class FinanceTracker:
 			return False
 			
 	def logExpense(self, category, addition=False):
+		self.clearColumns(4)
 		amount = tk.StringVar()
-		e = tk.Entry(self.tkBudget, textvariable = amount)
-		e.grid(row=1,column=3)
-		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(float(e.get()),category, addition))
-		button.grid(row=1,column=4)
+		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
+		e.grid(row=1,column=4)
+		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),category, addition))
+		button.grid(row=1,column=5)
 			
 	def logExpense_helper(self, amount,category,addition):
-		if addition:
-			amount*=-1
-		self.currentValues[category] -= amount 
-		self.currentValues[category] = round(self.currentValues[category],2)
-		self.saveUpdates()
-		self.displayBudget()
+		try:
+			amount = float(amount)
+			if addition:
+				amount*=-1
+			self.currentValues[category] -= round(amount,2)
+			self.displayBudget()
+		
+		except:
+			None
 
 	def updateCategory(self, category):
-		label = tk.Label(self.tkBudget,text="Category: " + category)
-		label.grid(row=0,column=2)
+		self.displayBudget()
+		label = tk.Label(self.tkBudget,text="Selected Category: " + category)
+		label.grid(row=0,column=3)
 		button=tk.Button(self.tkBudget, text= "Log Expense", command= lambda: self.logExpense(category))
-		button.grid(row=1,column=2)
+		button.grid(row=1,column=3)
 		button = tk.Button(self.tkBudget, text="Log One-time Windfall", command= lambda: self.logExpense(category, True))
-		button.grid(row=2,column=2)
+		button.grid(row=2,column=3)
 		button=tk.Button(self.tkBudget, text= "Update Monthly Allowance", command = lambda: self.changeBudget(category))
-		button.grid(row=3,column=2)
-		button = tk.Button(self.tkBudget, text= "Delete this category")
-		button.grid(row=4, column = 2)
+		button.grid(row=3,column=3)
+		button = tk.Button(self.tkBudget, text= "Delete this category", command = lambda: self.deleteCategory(category))
+		button.grid(row=4, column = 3)
+	
+	def addCategory(self):
+		self.clearColumns(3)
+		label = tk.Label(self.tkBudget, text="Enter name of category:")
+		label.grid(row=0,column=3)
+		name = tk.StringVar()
+		e1 = tk.Entry(self.tkBudget, textvariable=name)
+		e1.grid(row=1,column=3)
+		label = tk.Label(self.tkBudget, text="Enter monthly budget:")
+		label.grid(row=3,column=3)
+		amount = tk.StringVar()
+		e2 = tk.Entry(self.tkBudget, textvariable=amount)
+		e2.grid(row=4,column=3)
+		button = tk.Button(self.tkBudget, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get()))
+		button.grid(row=5,column=3)
+		
+	def addCategory_helper(self, name, amount):
+		try:
+			amount = float(amount)
+			if name!="":
+				self.budget[name]=round(amount,2)
+				self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
+			self.displayBudget()
+		except:
+			self.displayBudget()
 	
 	def clearFrame(self):
 		gridItems = self.tkBudget.grid_slaves()
@@ -169,92 +199,91 @@ class FinanceTracker:
 			item.destroy()
 			
 	def changeBudget(self, category):
-		print("change the ammount")
+		self.clearColumns(4)
+		label = tk.Label(self.tkBudget,text="Current Monthly Budget: " + str(self.budget[category]))
+		label.grid(row=0,column=4)
+		amount = tk.StringVar()
+		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
+		e.grid(row=1,column=4)
+		button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),category))
+		button.grid(row=2,column=4)
+		
+	def changeBudget_helper(self, amount, category):
+		try:
+			amount = float(amount)
+			difference = amount-self.budget[category]
+			adjustment = difference*self.proportionalUpdate()
+			self.logExpense_helper(adjustment, category, True)
+			self.budget[category]=round(amount,2)
+		except:
+			None
+					
+	def deleteCategory(self,category):
+		self.clearColumns(4)
+		label = tk.Label(self.tkBudget,text="Are you sure?")
+		label.grid(row=0,column=4)
+		button = tk.Button(self.tkBudget, text="Yes", command= lambda: self.deleteCategory_helper(category))
+		button.grid(row=1, column=4)
+		
+	def deleteCategory_helper(self, category):
+		del self.budget[category]
+		del self.currentValues[category]
+		self.displayBudget()
      	
 	def displayBudget(self):
 		self.clearFrame()
-		counter = 0
+		frame = tk.Frame(self.tkBudget)
+		frame.grid(row=0,column=0,sticky='nsew')
+		for col in range(3):
+			tk.Grid.columnconfigure(frame,col,weight=1)
+			for row in range(len(self.currentValues.keys())):
+				tk.Grid.rowconfigure(frame,row,weight=1)
+		label=tk.Label(frame, text = "Category")
+		label.grid(row = 0, column = 0,sticky='nsew')
+		label = tk.Label(self.tkBudget, text = "Available Balance")
+		label.grid(row=0,column=1,sticky='nsew')
+		label = tk.Label(self.tkBudget, text = "Monthly Allowance")
+		label.grid(row=0,column=2,sticky='nsew')
+		counter = 1
+		category = tk.StringVar()
 		for key in self.currentValues:
-			button=tk.Button(self.tkBudget, width=8,height=2, text=" " + key, anchor="w",relief="groove", command = lambda key=key: self.updateCategory(key))
-			button.grid(row=counter,column=0)
-			label = tk.Label(self.tkBudget, width=5, height=2, text = self.currentValues[key], relief="groove")
-			label.grid(row=counter, column=1)
+			button=tk.Radiobutton(self.tkBudget,indicatoron = 0, text=" " + key, variable=category, value = key, anchor="w",relief="groove", command = lambda key=key: self.updateCategory(category.get()))
+			button.grid(row=counter,column=0,sticky='nsew')
+			label = tk.Label(self.tkBudget, text = "$"+str(round(self.currentValues[key],2)), relief="groove")
+			label.grid(row=counter, column=1,sticky='nsew')
+			label = tk.Label(self.tkBudget, text = "$"+str(round(self.budget[key],2)), relief="groove")
+			label.grid(row=counter, column=2,sticky='nsew')
 			counter+=1
-		button = tk.Button(self.tkBudget, text = "Add new category")
+		button = tk.Button(self.tkBudget, text = "Add new category", command = self.addCategory)
 		button.grid(row=counter, column=0)
-		
 	
-	def saveUpdates(self):
+# 	def setCurCategory(
+	def clearColumns(self, column):
+		for item in self.tkBudget.grid_slaves():
+			if int(item.grid_info()["column"]) >= column:
+				item.grid_forget()
+	
+	def saveValues(self):
 		saveFile = open('currentTotals.txt', 'w')
 		for key in self.currentValues.keys():
 			string = key + ","+str(self.currentValues[key])+'\n'
 			saveFile.write(string)
 		saveFile.close
 		
-	def maintain(self, num):
-		self.loadBudget()
-		self.readSavings()
-		
-		if num == '1':
-			key = input("Please enter the name of the category you wish to add.\n")
-			budgetValue = float(input("Please enter the desired monthly budget.\n"))
-			
-			self.budget[key] = budgetValue
-			proportion = self.proportionalUpdate()
-			self.currentValues[key] = round(proportion*budgetValue,2)
-			
-		elif num == '2':
-			key = input("Please enter the name of the category you wish to delete.\n")
-			if key in self.currentValues: 
-				del self.currentValues[key]
-				del self.budget[key]
-			else:
-				print("Category not found!")
-				
-		elif num == '3':
-			keepGoing = True
-			while keepGoing:
-				key = input("Please enter the name of the category you wish to change the budget for.\n")
-				if key in self.budget:
-					oldValue = self.budget[key]
-					print("Your current monthly budget for " + key + " is: " + str(oldValue))
-					amount = float(input("Please enter your new desired monthly budget for this category.\n"))
-					self.budget[key] = amount
-					proportion = self.proportionalUpdate()
-					self.currentValues[key] += (amount-oldValue) * proportion
-					keepGoing = False
-				else:
-					print("Category not found!")
-			
-		elif num == '4':
-			keepGoing = True
-			while keepGoing:
-				key = input("Please enter the name of the category you wish to do a one-time addition to.\n")
-				if key in self.currentValues:
-					amount = float(input("Please input the ammount you would like to add and the press enter.\n"))
-					self.currentValues[key] += amount
-					keepGoing = False
-				else:
-					print("Category not found!")
-		
-		elif num == '5':
-			print("-----------------------------\nYour allowance per month is:\n")
-			for key in self.budget:
-				print(key, ": ", self.budget[key])
-			print("-----------------------------\n")
-
-		self.saveBudget()
-		self.saveUpdates()
+	
 
 if __name__ == '__main__':
 	budget = tk.Tk()
+	tk.Grid.rowconfigure(budget, 0, weight=1)
+	tk.Grid.columnconfigure(budget, 0, weight=1)
 	FT = FinanceTracker(budget)
 	FT.displayBudget()
-	keepGoing = True
-	updated = False
-	FT.saveUpdates()
-	
+
 	budget.mainloop()
+
+	FT.saveValues()
+	FT.saveBudget()
+	
 	
 	
 # root = tkinter.Tk()
@@ -264,7 +293,7 @@ if __name__ == '__main__':
 #    reader = csv.reader(file)
 
 def categoryClick():
-	test = tk.Tk()
+	test = tk.TK()
 	label=tk.Button(test, text ="yay")
 	label.grid(row=0,column=0)
 	
