@@ -97,12 +97,18 @@ class FinanceTracker:
 			return False
 			
 	def logExpense(self, addition=False):
-		self.clearColumns(4)
+		self.displayChoices()
 		amount = tk.StringVar()
-		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
-		e.grid(row=1,column=4)
-		button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
-		button.grid(row=1,column=5)
+		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
+		if addition:
+			self.clearItem(1,0,self.commandFrame)
+			e.grid(row=1,column=0)
+		else:
+			self.clearItem(0,0,self.commandFrame)
+			e.grid(row=0,column=0)
+		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(),self.curCategory, addition))
+		# button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
+# 		button.grid(row=1,column=5)
 			
 	def logExpense_helper(self, amount,category,addition):
 		try:
@@ -110,12 +116,13 @@ class FinanceTracker:
 			if addition:
 				amount*=-1
 			self.currentValues[category] -= round(amount,2)
-
 			self.displayBudget()
+			self.displayChoices()
+
 		except:
 			None
 
-	def updateCategory(self):
+	def displayChoices(self):
 		for col in range(1):
 			tk.Grid.columnconfigure(self.commandFrame,col,weight=1)
 			for row in range(4):
@@ -145,8 +152,8 @@ class FinanceTracker:
 		e2 = tk.Entry(addWindow, textvariable=amount)
 		e2.grid(row=4,column=0)
 		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow))
+		button.bind('<Return>', lambda command: self.addCategory_helper(e1.get(),e2.get(),addWindow))
 		button.grid(row=5,column=0)
-# 		addWindow.bind('<Return>', self.addCategory_helper(e1.get(),e2.get(),addWindow))
 		
 	def addCategory_helper(self, name, amount,window):
 		try:
@@ -165,11 +172,14 @@ class FinanceTracker:
 			item.destroy()
 			
 	def changeBudget(self):
+		self.displayChoices()
 		amount = tk.StringVar()
-		e = tk.Entry(self.tkBudget, width = 5, textvariable = amount)
-		e.grid(row=1,column=4)
-		button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),self.curCategory))
-		button.grid(row=2,column=4)
+		self.clearItem(2,0,self.commandFrame)
+		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
+		e.grid(row=2,column=0)
+		e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(),self.curCategory))
+		# button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),self.curCategory))
+# 		button.grid(row=2,column=4)
 		
 	def changeBudget_helper(self, amount, category):
 		try:
@@ -178,6 +188,7 @@ class FinanceTracker:
 			adjustment = difference*self.proportionalUpdate()
 			self.logExpense_helper(adjustment, category, True)
 			self.budget[category]=round(amount,2)
+			self.displayBudget()
 		except:
 			None
 					
@@ -211,7 +222,7 @@ class FinanceTracker:
 		label.grid(row=0,column=2,sticky='nsew')
 		counter = 1
 		for key in self.currentValues:
-			button=tk.Radiobutton(self.budgetFrame,indicatoron = 0, text=" " + key, value = key, anchor="w",relief="groove", command = lambda key=key: self.setCurCategory(key))
+			button=tk.Radiobutton(self.budgetFrame, selectcolor="blue",indicatoron = 0, text=" " + key, value = key, anchor="w", command = lambda key=key: self.setCurCategory(key))
 			button.grid(row=counter,column=0,sticky='nsew')
 			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.currentValues[key],2)), relief="groove")
 			label.grid(row=counter, column=1,sticky='nsew')
@@ -223,12 +234,18 @@ class FinanceTracker:
 	
 	def setCurCategory(self, category):
 		self.curCategory = category
+		self.displayChoices()
 
 	def clearColumns(self, column):
 		for item in self.tkBudget.grid_slaves():
 			if int(item.grid_info()["column"]) >= column:
 				item.grid_forget()
 	
+	def clearItem(self, row, col, grid):
+		for item in grid.grid_slaves():
+			if int(item.grid_info()["column"]) == col and int(item.grid_info()["row"])==row:
+				item.grid_forget()
+				
 	def saveValues(self):
 		saveFile = open('currentTotals.txt', 'w')
 		for key in self.currentValues.keys():
@@ -247,13 +264,13 @@ if __name__ == '__main__':
 			tk.Grid.columnconfigure(budget, col, weight=1)
 	FT = FinanceTracker(budget)
 	FT.displayBudget()
-	FT.updateCategory()
+	FT.displayChoices()
 
 	budget.mainloop()
 
 	FT.saveValues()
 	FT.saveBudget()
-	
+	FT.updateDate()
 	
 	
 # root = tkinter.Tk()
