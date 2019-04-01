@@ -16,7 +16,6 @@ class FinanceTracker:
 		self.curMonth = now.month
 		self.curYear = now.year
 		self.currentValues = {}
-		self.keyDictionary = {}
 		self.budget = {}
 		try:
 			self.readSavings()
@@ -100,12 +99,14 @@ class FinanceTracker:
 		self.displayChoices()
 		amount = tk.StringVar()
 		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
+		e.focus_set()
 		if addition:
+			self.clearItem(2,0,self.commandFrame)
+			e.grid(row=2,column=0)
+		else:
 			self.clearItem(1,0,self.commandFrame)
 			e.grid(row=1,column=0)
-		else:
-			self.clearItem(0,0,self.commandFrame)
-			e.grid(row=0,column=0)
+
 		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(),self.curCategory, addition))
 		# button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
 # 		button.grid(row=1,column=5)
@@ -125,17 +126,18 @@ class FinanceTracker:
 	def displayChoices(self):
 		for col in range(1):
 			tk.Grid.columnconfigure(self.commandFrame,col,weight=1)
-			for row in range(4):
+			for row in range(5):
 				tk.Grid.rowconfigure(self.commandFrame,row,weight=1)
-
+		label = tk.Label(self.commandFrame, text="Current Category: "+str(self.curCategory))
+		label.grid(row=0, column=0)
 		button=tk.Button(self.commandFrame, text= "Log Expense", command= lambda: self.logExpense())
-		button.grid(row=0,column=0,sticky='nsew')
-		button = tk.Button(self.commandFrame, text="Log One-time Windfall", command= lambda: self.logExpense(True))
 		button.grid(row=1,column=0,sticky='nsew')
-		button=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
+		button = tk.Button(self.commandFrame, text="Log One-time Windfall", command= lambda: self.logExpense(True))
 		button.grid(row=2,column=0,sticky='nsew')
+		button=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
+		button.grid(row=3,column=0,sticky='nsew')
 		button = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
-		button.grid(row=3, column = 0,sticky='nsew')
+		button.grid(row=4, column = 0,sticky='nsew')
 	
 	def addCategory(self):
 		self.clearColumns(3)
@@ -174,9 +176,10 @@ class FinanceTracker:
 	def changeBudget(self):
 		self.displayChoices()
 		amount = tk.StringVar()
-		self.clearItem(2,0,self.commandFrame)
+		self.clearItem(3,0,self.commandFrame)
 		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
-		e.grid(row=2,column=0)
+		e.focus_set()
+		e.grid(row=3,column=0)
 		e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(),self.curCategory))
 		# button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),self.curCategory))
 # 		button.grid(row=2,column=4)
@@ -193,12 +196,15 @@ class FinanceTracker:
 			None
 					
 	def deleteCategory(self):
-		confirmWindow = tk.Tk()
-		confirmWindow.title("Confirmation")
-		label = tk.Label(confirmWindow,text="Are you sure?")
-		label.grid(row=0,column=0)
-		button = tk.Button(confirmWindow, text="Yes", command= lambda: self.deleteCategory_helper(self.curCategory,confirmWindow))
-		button.grid(row=1, column=0)
+		if self.curCategory!=None:
+			self.displayChoices()
+			confirmWindow = tk.Tk()
+			confirmWindow.title("Confirmation")
+			label = tk.Label(confirmWindow,text="Are you sure you want to delete "+self.curCategory+"?")
+			label.grid(row=0,column=0)
+			button = tk.Button(confirmWindow, text="Yes", command= lambda: self.deleteCategory_helper(self.curCategory,confirmWindow))
+			button.grid(row=1, column=0)
+
 		
 	def deleteCategory_helper(self, category,window):
 		del self.budget[category]
@@ -231,9 +237,13 @@ class FinanceTracker:
 			counter+=1
 		button = tk.Button(self.budgetFrame, text = "Add new category", command = self.addCategory)
 		button.grid(row=counter, column=0)
+
 	
 	def setCurCategory(self, category):
 		self.curCategory = category
+		self.clearItem(0,0,self.commandFrame)
+		label = tk.Label(self.commandFrame, text="Current Category: "+str(self.curCategory))
+		label.grid(row=0, column=0)
 		self.displayChoices()
 
 	def clearColumns(self, column):
