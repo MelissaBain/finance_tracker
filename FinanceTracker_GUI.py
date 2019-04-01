@@ -148,15 +148,18 @@ class FinanceTracker:
 		name = tk.StringVar()
 		e1 = tk.Entry(addWindow, textvariable=name)
 		e1.grid(row=1,column=0)
+		e1.focus_set()
 		label = tk.Label(addWindow, text="Enter monthly budget:")
 		label.grid(row=3,column=0)
 		amount = tk.StringVar()
 		e2 = tk.Entry(addWindow, textvariable=amount)
 		e2.grid(row=4,column=0)
+		e1.bind('<Return>', lambda command: e2.focus_set())
 		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow))
 		button.bind('<Return>', lambda command: self.addCategory_helper(e1.get(),e2.get(),addWindow))
 		button.grid(row=5,column=0)
-		
+		e2.bind('<Return>', lambda command: button.focus_set())
+
 	def addCategory_helper(self, name, amount,window):
 		try:
 			amount = float(amount)
@@ -204,12 +207,15 @@ class FinanceTracker:
 			label.grid(row=0,column=0)
 			button = tk.Button(confirmWindow, text="Yes", command= lambda: self.deleteCategory_helper(self.curCategory,confirmWindow))
 			button.grid(row=1, column=0)
+			button.focus_set()
+			button.bind('<Return>', lambda command: self.deleteCategory_helper(self.curCategory,confirmWindow))
 
 		
 	def deleteCategory_helper(self, category,window):
 		del self.budget[category]
 		del self.currentValues[category]
 		window.destroy()
+		self.curCategory = None
 		self.budgetFrame.destroy()
 		self.displayBudget()
      	
@@ -227,14 +233,21 @@ class FinanceTracker:
 		label = tk.Label(self.budgetFrame, text = "Monthly Allowance")
 		label.grid(row=0,column=2,sticky='nsew')
 		counter = 1
-		for key in self.currentValues:
-			button=tk.Radiobutton(self.budgetFrame, selectcolor="blue",indicatoron = 0, text=" " + key, value = key, anchor="w", command = lambda key=key: self.setCurCategory(key))
+		v = tk.StringVar()
+		keys = list(self.currentValues.keys())
+		for key in keys:
+			button=tk.Radiobutton(self.budgetFrame, selectcolor="blue",indicatoron = 0, text=" " + key, variable = v, value = key, anchor="w", command = lambda v=v: self.setCurCategory(v.get()))
 			button.grid(row=counter,column=0,sticky='nsew')
 			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.currentValues[key],2)), relief="groove")
 			label.grid(row=counter, column=1,sticky='nsew')
 			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.budget[key],2)), relief="groove", anchor="e")
 			label.grid(row=counter, column=2,sticky='nsew')
 			counter+=1
+		if self.curCategory == None:
+			v.set(keys[0])
+			self.setCurCategory(keys[0])
+		else:
+			v.set(self.curCategory)
 		button = tk.Button(self.budgetFrame, text = "Add new category", command = self.addCategory)
 		button.grid(row=counter, column=0)
 
