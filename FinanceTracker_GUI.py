@@ -243,7 +243,7 @@ class FinanceTracker:
 			label = tk.Label(self.budgetFrame, text = "$"+str(round(self.budget[key],2)), relief="groove", anchor="e")
 			label.grid(row=counter, column=2,sticky='nsew')
 			counter+=1
-		if self.curCategory == None:
+		if self.curCategory == None and len(keys)>0:
 			v.set(keys[0])
 			self.setCurCategory(keys[0])
 		else:
