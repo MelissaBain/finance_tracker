@@ -107,22 +107,52 @@ class FinanceTracker:
 			self.clearItem(1,0,self.commandFrame)
 			e.grid(row=1,column=0)
 
-		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(),self.curCategory, addition))
+		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(), addition))
 		# button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
 # 		button.grid(row=1,column=5)
 			
-	def logExpense_helper(self, amount,category,addition):
+	def logExpense_helper(self, amount,addition):
 		try:
 			amount = float(amount)
 			if addition:
 				amount*=-1
-			self.currentValues[category] -= round(amount,2)
-			self.displayBudget()
-			self.displayChoices()
+			self.currentValues[self.curCategory] -= round(amount,2)
+			
+			if addition:
+				self.displayBudget()
+				self.displayChoices()
+			else:
+				self.getLabel(addition, amount)
 
 		except:
 			None
+	
+	def getLabel(self, addition, amount):
+		labelFrame = tk.Frame(self.commandFrame)
+		
+		if addition:
+			self.clearItem(2,0,self.commandFrame)
+			labelFrame.grid(row=2,column=0)
+		else:
+			self.clearItem(1,0,self.commandFrame)
+			labelFrame.grid(row=1,column=0)
 
+			
+		labelName = tk.StringVar()
+		label = tk.Label(labelFrame, text = "Optional Explanation:")
+		label.grid(row=0,column=0, sticky='e')
+		e = tk.Entry(labelFrame, width = 10, textvariable=labelName)
+		e.focus_set()
+		e.grid(row=0,column=1,sticky='w')
+		
+		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount))
+		
+	
+	def logLabel(self, label, amount):
+		print(label, amount, self.curCategory, self.curDate, self.curMonth,self.curYear)
+		self.displayBudget()
+		self.displayChoices()
+	
 	def displayChoices(self):
 		for col in range(1):
 			tk.Grid.columnconfigure(self.commandFrame,col,weight=1)
