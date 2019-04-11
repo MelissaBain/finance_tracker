@@ -21,14 +21,17 @@ class FinanceTracker:
 			self.readSavings()
 			self.loadBudget()
 		except FileNotFoundError:
-			None
+			self.makeRecord()
 
 		self.update()
 		self.curCategory = None
 
 
-		
-
+	def makeRecord(self):
+		with open("budgetRecord.csv", 'w') as budgetRecord:
+			writer = csv.writer(budgetRecord, delimiter='\t')
+			writer.writerow(['date','category','amount','comment'])
+			
 	
 	def proportionalUpdate(self):
 		monthDays = [31,28,31,30,31,30,31,31,30,31,30,31]
@@ -108,8 +111,7 @@ class FinanceTracker:
 			e.grid(row=1,column=0)
 
 		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(), addition))
-		# button = tk.Button(self.tkBudget, text="Log", command = lambda: self.logExpense_helper(e.get(),self.curCategory, addition))
-# 		button.grid(row=1,column=5)
+
 			
 	def logExpense_helper(self, amount,addition):
 		try:
@@ -147,9 +149,17 @@ class FinanceTracker:
 		
 		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount))
 		
-	
 	def logLabel(self, label, amount):
-		print(label, amount, self.curCategory, self.curDate, self.curMonth,self.curYear)
+		keepGoing = True
+		while keepGoing:
+			try:
+				with open('budgetRecord.csv', 'a') as budgetRecord:
+					writer = csv.writer(budgetRecord, delimiter='\t')
+					writer.writerow([str(self.curMonth)+'/'+str(self.curDate)+'/'+str(self.curYear),self.curCategory,amount,label])
+				keepGoing = False
+			except:
+				self.makeRecord()
+				
 		self.displayBudget()
 		self.displayChoices()
 	
@@ -166,11 +176,28 @@ class FinanceTracker:
 		button.grid(row=2,column=0,sticky='nsew')
 		button=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
 		button.grid(row=3,column=0,sticky='nsew')
-		button = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
+		button = tk.Button(self.commandFrame, text= "View History", command = lambda: self.viewHistory())
 		button.grid(row=4, column = 0,sticky='nsew')
+		button = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
+		button.grid(row=5, column = 0,sticky='nsew')
 	
+	def viewHistory(self):
+		historyWindow = tk.Tk()
+		historyWindow.title(self.curCategory+': Expense History')
+		with open('budgetRecord.csv', 'r') as budgetRecord:
+			csvReader = csv.reader(budgetRecord, delimiter ='\t')
+			for i, row in enumerate(csvReader):
+				if i == 0 or row[1] == self.curCategory:
+					self.displayRow(row,i,historyWindow)
+					
+	def displayRow(self, row, i, tkWindow):
+		for j, value in enumerate(row):
+			label = tk.Label(tkWindow, text=value)
+			label.grid(row=i,column=j)
+		
+			
+		
 	def addCategory(self):
-		self.clearColumns(3)
 		addWindow = tk.Tk()
 		addWindow.title("Add a Category")
 		label = tk.Label(addWindow, text="Enter name of category:")
@@ -213,18 +240,17 @@ class FinanceTracker:
 		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
 		e.focus_set()
 		e.grid(row=3,column=0)
-		e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(),self.curCategory))
-		# button = tk.Button(self.tkBudget, text="Update", command = lambda: self.changeBudget_helper(e.get(),self.curCategory))
-# 		button.grid(row=2,column=4)
+		e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(), self.curCategory))
+
 		
 	def changeBudget_helper(self, amount, category):
 		try:
 			amount = float(amount)
 			difference = amount-self.budget[category]
-			adjustment = difference*self.proportionalUpdate()
-			self.logExpense_helper(adjustment, category, True)
+			self.logExpense_helper(adjustment, True)
 			self.budget[category]=round(amount,2)
 			self.displayBudget()
+			self.displayChoices()
 		except:
 			None
 					
@@ -289,10 +315,10 @@ class FinanceTracker:
 		label.grid(row=0, column=0)
 		self.displayChoices()
 
-	def clearColumns(self, column):
-		for item in self.tkBudget.grid_slaves():
-			if int(item.grid_info()["column"]) >= column:
-				item.grid_forget()
+	# def clearColumns(self, column):
+# 		for item in self.tkBudget.grid_slaves():
+# 			if int(item.grid_info()["column"]) >= column:
+# 				item.grid_forget()
 	
 	def clearItem(self, row, col, grid):
 		for item in grid.grid_slaves():
