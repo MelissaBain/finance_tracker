@@ -1,48 +1,70 @@
+#!/usr/bin/env python
+
+"""Finance Tracker: A Cash-Envelope, Mint & Sinking Fund Hybrid Budget Tool"""
+
 import tkinter as tk
 import csv
 import datetime
 import pandas as pd
 
+__author__ = "Melissa Bain"
+
 class FinanceTracker:
 
 	def __init__(self, tkBudget):
+		"""Initialized the finance tracker by making GUI and loading/updating budget"""
+	
+		#set up GUI
 		self.tkBudget = tkBudget
 		self.budgetFrame = tk.Frame(self.tkBudget)
 		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
 		self.commandFrame = tk.Frame(self.tkBudget)
 		self.commandFrame.grid(row=1,column=0,sticky='nsew')
+		
+		#record current date
 		now = datetime.datetime.now()
 		self.curDate = now.day
 		self.curMonth = now.month
 		self.curYear = now.year
+		
+		#make data structures to store budget info
 		self.currentValues = {}
 		self.budget = {}
+		
+		#load data or initialize program if first time running
 		try:
 			self.readSavings()
 			self.loadBudget()
 		except FileNotFoundError:
 			self.makeRecord()
 
+		#update budget and initialize category
 		self.update()
 		self.curCategory = None
 
 
 	def makeRecord(self):
+		"""Makes a csv file to record each budget log"""
+	
 		with open("budgetRecord.csv", 'w') as budgetRecord:
 			writer = csv.writer(budgetRecord, delimiter='\t')
 			writer.writerow(['Date','Category','Amount','Comment'])
 			
 	
 	def proportionalUpdate(self):
+		"""Gives proportion of the month that still remains for budget allocation purposes"""
+	
 		monthDays = [31,28,31,30,31,30,31,31,30,31,30,31]
 		leapYearDays = [31,29,31,30,31,30,31,31,30,31,30,31]
-		if self.curYear%4 == 0:
+		if self.curYear%4 == 0: #calculate if leap year
 			totalDays = leapYearDays[self.curMonth-1]
 		else:
 			totalDays = monthDays[self.curMonth-1]
 		return (totalDays-self.curDate+1)/totalDays
 	
 	def readSavings(self):
+		"""Reads and saves the current sinking fund totals to the current values dictionary"""
+		
 		with open("currentTotals.txt", 'r') as f:
 			for line in f:
 				items = line.split(",")
@@ -51,8 +73,9 @@ class FinanceTracker:
 				self.currentValues[key] = values
 		counter = 0
 
-
 	def update(self):
+		"""Updates sinking fund totals if the 1st of the month has passed since the last update"""
+	
 		keepUpdating = self.checkDate()
 		if keepUpdating:
 			self.loadBudget()
@@ -60,6 +83,8 @@ class FinanceTracker:
 				self.currentValues[key] += self.budget[key]
 
 	def loadBudget(self):
+		"""Reads and saves the budget to the budget dictionary"""
+	
 		self.budget = {}
 		with open("monthlyBudget.txt", 'r') as f:
 			for line in f:
@@ -69,6 +94,8 @@ class FinanceTracker:
 				self.budget[key] = values
 		
 	def saveBudget(self):
+		"""Writes budget and saves file"""
+	
 		saveFile = open('monthlyBudget.txt', 'w')
 		for key in self.budget.keys():
 			string = key + ","+str(self.budget[key])+'\n'
@@ -76,11 +103,15 @@ class FinanceTracker:
 		saveFile.close
 		
 	def updateDate(self):
+		"""Saves the current month and year to indicate totals were updated"""
+	
 		lastUpdate = open("last_update.txt", "w")
 		lastUpdate.write(str(self.curMonth) + " " + str(self.curYear))
 		lastUpdate.close()
 		
 	def checkDate(self):
+		"""Checks to see if a month has passed. If so updates budget"""
+	
 		try:
 			lastUpdate = open("last_update.txt", "r")
 		except:
@@ -94,11 +125,12 @@ class FinanceTracker:
 			return True
 		elif monthsPassed == 0:
 			return False
-		else:
+		else: #if more than 1 month has passed don't update since unlikely user has accurate log of expenses
 			print("Please manually update since over a month has passed")
 			return False
 			
 	def logExpense(self, addition=False):
+		"""Makes entry field in GUI to record expenses/additions"""
 		self.displayChoices()
 		amount = tk.StringVar()
 		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
@@ -114,18 +146,14 @@ class FinanceTracker:
 
 			
 	def logExpense_helper(self, amount,addition):
+		"""Updates sinking fund values"""
+	
 		try:
 			amount = float(amount)
 			if addition:
 				amount*=-1
 			self.currentValues[self.curCategory] -= round(amount,2)
-			
-			if addition:
-				self.displayBudget()
-				self.displayChoices()
-			else:
-				self.getLabel(addition, amount)
-
+			self.getLabel(addition, amount)
 		except:
 			None
 	
@@ -146,15 +174,19 @@ class FinanceTracker:
 		e.focus_set()
 		e.grid(row=0,column=1,sticky='w')
 		
-		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount))
+		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount, addition))
 		
-	def logLabel(self, label, amount):
+	def logLabel(self, label, amount, addition):
 		keepGoing = True
 		while keepGoing:
 			try:
 				with open('budgetRecord.csv', 'a') as budgetRecord:
 					writer = csv.writer(budgetRecord, delimiter='\t')
-					writer.writerow([str(self.curMonth)+'/'+str(self.curDate)+'/'+str(self.curYear),self.curCategory,amount,label])
+					if addition:
+						amountStr = "+"+str(-1*amount)
+					else:
+						amountStr = "-"+str(amount)
+					writer.writerow([str(self.curMonth)+'/'+str(self.curDate)+'/'+str(self.curYear),self.curCategory,amountStr,label])
 				keepGoing = False
 			except:
 				self.makeRecord()
@@ -182,18 +214,24 @@ class FinanceTracker:
 	
 	def viewHistory(self):
 		historyWindow = tk.Tk()
-		historyWindow.title('Expense History:' +str(self.curCategory))
+		historyWindow.title(str(self.curCategory))
 		with open('budgetRecord.csv', 'r') as budgetRecord:
 			csvReader = csv.reader(budgetRecord, delimiter ='\t')
+			colorBool = True #make alternating colors
 			for i, row in enumerate(csvReader):
 				if i == 0 or row[1] == self.curCategory:
-					self.displayRow(row,i,historyWindow)
+					self.displayRow(row,i,historyWindow, colorBool)
+					if colorBool:
+						colorBool = False
+					else:
+						colorBool=True
 					
-	def displayRow(self, row, i, tkWindow):
-		for j, value in enumerate(row):
-			color = "gray90"
-			if i%2==0:
-				color = "gray70"
+	def displayRow(self, row, i, tkWindow, colorBool):
+		color = "gray90"
+		if colorBool:
+			color = "gray80"
+		for j in [0,2,3]:
+			value = row[j]
 			label = tk.Label(tkWindow, text=value, bg=color)
 			label.grid(row=i,column=j, sticky='ew')
 		
