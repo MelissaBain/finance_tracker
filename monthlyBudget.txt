@@ -1,3 +1,0 @@
-testing,10.0
-testing2,90.0
-blahblah,70.0

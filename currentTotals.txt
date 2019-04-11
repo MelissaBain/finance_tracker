@@ -1,3 +1,0 @@
-testing,98.67
-testing2,50.0
-blahblah,117.67
