@@ -139,7 +139,6 @@ class FinanceTracker:
 			self.clearItem(1,0,self.commandFrame)
 			labelFrame.grid(row=1,column=0)
 
-			
 		labelName = tk.StringVar()
 		label = tk.Label(labelFrame, text = "Optional Explanation:")
 		label.grid(row=0,column=0, sticky='e')
@@ -183,7 +182,7 @@ class FinanceTracker:
 	
 	def viewHistory(self):
 		historyWindow = tk.Tk()
-		historyWindow.title(self.curCategory+': Expense History')
+		historyWindow.title(str(self.curCategory)+': Expense History')
 		with open('budgetRecord.csv', 'r') as budgetRecord:
 			csvReader = csv.reader(budgetRecord, delimiter ='\t')
 			for i, row in enumerate(csvReader):
@@ -315,11 +314,7 @@ class FinanceTracker:
 		label.grid(row=0, column=0)
 		self.displayChoices()
 
-	# def clearColumns(self, column):
-# 		for item in self.tkBudget.grid_slaves():
-# 			if int(item.grid_info()["column"]) >= column:
-# 				item.grid_forget()
-	
+
 	def clearItem(self, row, col, grid):
 		for item in grid.grid_slaves():
 			if int(item.grid_info()["column"]) == col and int(item.grid_info()["row"])==row:
