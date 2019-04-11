@@ -30,7 +30,7 @@ class FinanceTracker:
 	def makeRecord(self):
 		with open("budgetRecord.csv", 'w') as budgetRecord:
 			writer = csv.writer(budgetRecord, delimiter='\t')
-			writer.writerow(['date','category','amount','comment'])
+			writer.writerow(['Date','Category','Amount','Comment'])
 			
 	
 	def proportionalUpdate(self):
@@ -182,7 +182,7 @@ class FinanceTracker:
 	
 	def viewHistory(self):
 		historyWindow = tk.Tk()
-		historyWindow.title(str(self.curCategory)+': Expense History')
+		historyWindow.title('Expense History:' +str(self.curCategory))
 		with open('budgetRecord.csv', 'r') as budgetRecord:
 			csvReader = csv.reader(budgetRecord, delimiter ='\t')
 			for i, row in enumerate(csvReader):
@@ -191,10 +191,12 @@ class FinanceTracker:
 					
 	def displayRow(self, row, i, tkWindow):
 		for j, value in enumerate(row):
-			label = tk.Label(tkWindow, text=value)
-			label.grid(row=i,column=j)
+			color = "gray90"
+			if i%2==0:
+				color = "gray70"
+			label = tk.Label(tkWindow, text=value, bg=color)
+			label.grid(row=i,column=j, sticky='ew')
 		
-			
 		
 	def addCategory(self):
 		addWindow = tk.Tk()
@@ -223,7 +225,9 @@ class FinanceTracker:
 				self.budget[name]=round(amount,2)
 				self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
 			window.destroy()
+			self.setCurCategory(name)
 			self.displayBudget()
+			self.displayChoices()
 		except:
 			self.displayBudget()
 	
