@@ -42,6 +42,8 @@ class FinanceTracker:
 		self.update()
 		self.curCategory = None
 
+	def initializeGUI(self):
+		
 
 	def makeRecord(self):
 		"""Makes a csv file to record each budget log"""
@@ -131,18 +133,19 @@ class FinanceTracker:
 			
 	def logExpense(self, addition=False):
 		"""Makes entry field in GUI to record expenses/additions"""
-		self.displayChoices()
-		amount = tk.StringVar()
-		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
-		e.focus_set()
-		if addition:
-			self.clearItem(2,0,self.commandFrame)
-			e.grid(row=2,column=0)
-		else:
-			self.clearItem(1,0,self.commandFrame)
-			e.grid(row=1,column=0)
+		if self.curCategory != None:
+			self.displayChoices()
+			amount = tk.StringVar()
+			e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
+			e.focus_set()
+			if addition:
+				self.clearItem(2,0,self.commandFrame)
+				e.grid(row=2,column=0)
+			else:
+				self.clearItem(1,0,self.commandFrame)
+				e.grid(row=1,column=0)
 
-		e.bind('<Return>', lambda command: self.logExpense_helper(e.get(), addition))
+			e.bind('<Return>', lambda command: self.logExpense_helper(e.get(), addition))
 
 			
 	def logExpense_helper(self, amount,addition):
@@ -173,10 +176,9 @@ class FinanceTracker:
 		e = tk.Entry(labelFrame, width = 10, textvariable=labelName)
 		e.focus_set()
 		e.grid(row=0,column=1,sticky='w')
+		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount, addition, labelFrame))
 		
-		e.bind('<Return>', lambda command: self.logLabel(e.get(), amount, addition))
-		
-	def logLabel(self, label, amount, addition):
+	def logLabel(self, label, amount, addition, labelFrame):
 		keepGoing = True
 		while keepGoing:
 			try:
@@ -188,13 +190,15 @@ class FinanceTracker:
 						amountStr = "-"+str(amount)
 					writer.writerow([str(self.curMonth)+'/'+str(self.curDate)+'/'+str(self.curYear),self.curCategory,amountStr,label])
 				keepGoing = False
+				labelFrame.destroy()
 			except:
 				self.makeRecord()
-				
 		self.displayBudget()
 		self.displayChoices()
 	
 	def displayChoices(self):
+		for child in self.commandFrame.winfo_children():
+			child.destroy()
 		for col in range(1):
 			tk.Grid.columnconfigure(self.commandFrame,col,weight=1)
 			for row in range(5):
@@ -213,18 +217,19 @@ class FinanceTracker:
 		button.grid(row=5, column = 0,sticky='nsew')
 	
 	def viewHistory(self):
-		historyWindow = tk.Tk()
-		historyWindow.title(str(self.curCategory))
-		with open('budgetRecord.csv', 'r') as budgetRecord:
-			csvReader = csv.reader(budgetRecord, delimiter ='\t')
-			colorBool = True #make alternating colors
-			for i, row in enumerate(csvReader):
-				if i == 0 or row[1] == self.curCategory:
-					self.displayRow(row,i,historyWindow, colorBool)
-					if colorBool:
-						colorBool = False
-					else:
-						colorBool=True
+		if self.curCategory != None:
+			historyWindow = tk.Tk()
+			historyWindow.title(str(self.curCategory))
+			with open('budgetRecord.csv', 'r') as budgetRecord:
+				csvReader = csv.reader(budgetRecord, delimiter ='\t')
+				colorBool = True #make alternating colors
+				for i, row in enumerate(csvReader):
+					if i == 0 or row[1] == self.curCategory:
+						self.displayRow(row,i,historyWindow, colorBool)
+						if colorBool:
+							colorBool = False
+						else:
+							colorBool=True
 					
 	def displayRow(self, row, i, tkWindow, colorBool):
 		color = "gray90"
@@ -275,19 +280,21 @@ class FinanceTracker:
 			item.destroy()
 			
 	def changeBudget(self):
-		self.displayChoices()
-		amount = tk.StringVar()
-		self.clearItem(3,0,self.commandFrame)
-		e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
-		e.focus_set()
-		e.grid(row=3,column=0)
-		e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(), self.curCategory))
+		if self.curCategory != None:
+			self.displayChoices()
+			amount = tk.StringVar()
+			self.clearItem(3,0,self.commandFrame)
+			e = tk.Entry(self.commandFrame, width = 5, textvariable = amount)
+			e.focus_set()
+			e.grid(row=3,column=0)
+			e.bind('<Return>', lambda command: self.changeBudget_helper(e.get(), self.curCategory))
 
 		
 	def changeBudget_helper(self, amount, category):
 		try:
 			amount = float(amount)
 			difference = amount-self.budget[category]
+			adjustment = difference*self.proportionalUpdate()
 			self.logExpense_helper(adjustment, True)
 			self.budget[category]=round(amount,2)
 			self.displayBudget()
@@ -313,10 +320,12 @@ class FinanceTracker:
 		del self.currentValues[category]
 		window.destroy()
 		self.curCategory = None
-		self.budgetFrame.destroy()
 		self.displayBudget()
+		self.displayChoices()
      	
 	def displayBudget(self):
+		for child in self.budgetFrame.winfo_children():
+			child.destroy() 
 		self.budgetFrame = tk.Frame(self.tkBudget)
 		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
 		for col in range(3):
@@ -347,6 +356,8 @@ class FinanceTracker:
 			v.set(self.curCategory)
 		button = tk.Button(self.budgetFrame, text = "Add new category", command = self.addCategory)
 		button.grid(row=counter, column=0)
+		if self.curCategory==None:
+			button.focus_set()
 
 	
 	def setCurCategory(self, category):
