@@ -16,10 +16,10 @@ class FinanceTracker:
 	
 		#set up GUI
 		self.tkBudget = tkBudget
-		self.budgetFrame = tk.Frame(self.tkBudget)
-		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
-		self.commandFrame = tk.Frame(self.tkBudget)
-		self.commandFrame.grid(row=1,column=0,sticky='nsew')
+# 		self.budgetFrame = tk.Frame(self.tkBudget)
+# 		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
+# 		self.commandFrame = tk.Frame(self.tkBudget)
+# 		self.commandFrame.grid(row=1,column=0,sticky='nsew')
 		
 		#record current date
 		now = datetime.datetime.now()
@@ -42,9 +42,16 @@ class FinanceTracker:
 		self.update()
 		self.curCategory = None
 
-	def initializeGUI(self):
+	def displayGUI(self):
+		for child in self.tkBudget.winfo_children():
+			child.destroy()
+		self.budgetFrame = tk.Frame(self.tkBudget)
+		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
+		self.commandFrame = tk.Frame(self.tkBudget)
+		self.commandFrame.grid(row=1,column=0,sticky='nsew')
+		self.displayBudget()
+		self.displayChoices()
 		
-
 	def makeRecord(self):
 		"""Makes a csv file to record each budget log"""
 	
@@ -320,8 +327,9 @@ class FinanceTracker:
 		del self.currentValues[category]
 		window.destroy()
 		self.curCategory = None
-		self.displayBudget()
-		self.displayChoices()
+		self.displayGUI()
+		# self.displayBudget()
+# 		self.displayChoices()
      	
 	def displayBudget(self):
 		for child in self.budgetFrame.winfo_children():
@@ -390,8 +398,9 @@ if __name__ == '__main__':
 		for col in range(1):
 			tk.Grid.columnconfigure(budget, col, weight=1)
 	FT = FinanceTracker(budget)
-	FT.displayBudget()
-	FT.displayChoices()
+	FT.displayGUI()
+# 	FT.displayBudget()
+# 	FT.displayChoices()
 
 	budget.mainloop()
 
