@@ -6,6 +6,7 @@ import tkinter as tk
 import csv
 import datetime
 import pandas as pd
+import copy
 
 __author__ = "Melissa Bain"
 
@@ -16,11 +17,7 @@ class FinanceTracker:
 	
 		#set up GUI
 		self.tkBudget = tkBudget
-# 		self.budgetFrame = tk.Frame(self.tkBudget)
-# 		self.budgetFrame.grid(row=0,column=0,sticky='nsew')
-# 		self.commandFrame = tk.Frame(self.tkBudget)
-# 		self.commandFrame.grid(row=1,column=0,sticky='nsew')
-		
+		self.outerVar = tk.IntVar(value=0)		
 		#record current date
 		now = datetime.datetime.now()
 		self.curDate = now.day
@@ -252,28 +249,65 @@ class FinanceTracker:
 		addWindow = tk.Tk()
 		addWindow.title("Add a Category")
 		label = tk.Label(addWindow, text="Enter name of category:")
-		label.grid(row=0,column=0)
+		label.grid(row=0,column=0, sticky='w')
 		name = tk.StringVar()
 		e1 = tk.Entry(addWindow, textvariable=name)
-		e1.grid(row=1,column=0)
+		e1.grid(row=1,column=0, sticky='w')
 		e1.focus_set()
 		label = tk.Label(addWindow, text="Enter monthly budget:")
-		label.grid(row=3,column=0)
+		label.grid(row=3,column=0, sticky='w')
 		amount = tk.StringVar()
 		e2 = tk.Entry(addWindow, textvariable=amount)
-		e2.grid(row=4,column=0)
+		e2.grid(row=4,column=0, sticky='w')
+		label = tk.Label(addWindow, text="\nHow would you like this month's budget allocated?")
+		label.grid(row=5,column=0, sticky='w')
+		
+		
+		additionNames = ["Proportional","Entirety","Deferred","Custom Amount:"]
+		additionType = tk.Frame(addWindow)
+		v = tk.IntVar(additionType, value = 0)
+		additionType.grid(row=6,column=0,sticky='nsew')
+		for i, name in enumerate(additionNames):
+			radiobutton=tk.Radiobutton(additionType,text=name, anchor='w', variable=v, value = i, command = lambda v=v: self.displayDescription(v.get(),addWindow))
+			radiobutton.grid(row=i,column=0,sticky='nsew')
+			radiobutton.bind('<Return>', command= select())
+		customAmount = tk.StringVar(additionType)
+		e3 = tk.Entry(additionType, textvariable = customAmount, width=5)
+		e3.grid(row=i, column = 1,sticky='nsew')
+		label = tk.Label(addWindow, text="Description:")
+		label.grid(row=7,column=0,sticky='w')
+		self.displayDescription(v.get(),addWindow)
 		e1.bind('<Return>', lambda command: e2.focus_set())
-		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow))
-		button.bind('<Return>', lambda command: self.addCategory_helper(e1.get(),e2.get(),addWindow))
-		button.grid(row=5,column=0)
+		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow, v.get(),e3.get()))
+		button.bind('<Return>', lambda command: self.addCategory_helper(e1.get(),e2.get(),addWindow, v.get(),e3.get()))
+		button.grid(row=9,column=0, sticky='w')
 		e2.bind('<Return>', lambda command: button.focus_set())
 
-	def addCategory_helper(self, name, amount,window):
+	def displayDescription(self, num, window):
+		descriptions=["You will be given the amount proportional to the\nnumber of remaining days in the month.",
+					"You will be given the full month's budget.\n",
+					"You will receive your first deposite next month.\n",
+					"Enter the amount you wish to start with.\n"]
+		self.clearItem(8, 0, window)
+		label = tk.Label(window, text = descriptions[num])
+		label.grid(row=8, column=0, sticky='w')
+		
+	def addCategory_helper(self, name, amount,window,additionType, customAmount):
 		try:
 			amount = float(amount)
 			if name!="":
 				self.budget[name]=round(amount,2)
-				self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
+				if additionType==0:
+					self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
+				elif additionType==1:
+					self.currentValues[name] = round(amount,2)
+				elif additionType==2:
+					self.currentValues[name] = 0
+				else:
+					try:
+						self.currentValues[name] = round(float(customAmount),2)
+					except ValueError:
+						self.currentValues[name]=round(amount*self.proportionalUpdate(),2)
 			window.destroy()
 			self.setCurCategory(name)
 			self.displayBudget()
@@ -328,8 +362,7 @@ class FinanceTracker:
 		window.destroy()
 		self.curCategory = None
 		self.displayGUI()
-		# self.displayBudget()
-# 		self.displayChoices()
+
      	
 	def displayBudget(self):
 		for child in self.budgetFrame.winfo_children():
