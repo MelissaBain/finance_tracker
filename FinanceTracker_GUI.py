@@ -209,16 +209,25 @@ class FinanceTracker:
 				tk.Grid.rowconfigure(self.commandFrame,row,weight=1)
 		label = tk.Label(self.commandFrame, text="Current Category: "+str(self.curCategory))
 		label.grid(row=0, column=0)
-		button=tk.Button(self.commandFrame, text= "Log Expense", command= lambda: self.logExpense())
-		button.grid(row=1,column=0,sticky='nsew')
-		button = tk.Button(self.commandFrame, text="Log One-time Windfall", command= lambda: self.logExpense(True))
-		button.grid(row=2,column=0,sticky='nsew')
-		button=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
-		button.grid(row=3,column=0,sticky='nsew')
-		button = tk.Button(self.commandFrame, text= "View History", command = lambda: self.viewHistory())
-		button.grid(row=4, column = 0,sticky='nsew')
-		button = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
-		button.grid(row=5, column = 0,sticky='nsew')
+		button1=tk.Button(self.commandFrame, text= "Log Expense", command= lambda: self.logExpense())
+		button1.grid(row=1,column=0,sticky='nsew')
+		button1.bind('<Return>', lambda command: self.logExpense())
+		
+		button2 = tk.Button(self.commandFrame, text="Log One-time Windfall", command= lambda: self.logExpense(True))
+		button2.grid(row=2,column=0,sticky='nsew')
+		button2.bind('<Return>', lambda command: self.logExpense(True))
+		
+		button3=tk.Button(self.commandFrame, text= "Update Monthly Allowance", command = lambda: self.changeBudget())
+		button3.grid(row=3,column=0,sticky='nsew')
+		button3.bind('<Return>', lambda command: self.changeBudget())
+
+		button4 = tk.Button(self.commandFrame, text= "View History", command = lambda: self.viewHistory())
+		button4.grid(row=4, column = 0,sticky='nsew')
+		button4.bind('<Return>', lambda command: self.viewHistory())
+		
+		button5 = tk.Button(self.commandFrame, text= "Delete this category", command = lambda: self.deleteCategory())
+		button5.grid(row=5, column = 0,sticky='nsew')
+		button5.bind('<Return>', lambda command: self.deleteCategory())
 	
 	def viewHistory(self):
 		if self.curCategory != None:
@@ -270,13 +279,14 @@ class FinanceTracker:
 		for i, name in enumerate(additionNames):
 			radiobutton=tk.Radiobutton(additionType,text=name, anchor='w', variable=v, value = i, command = lambda v=v: self.displayDescription(v.get(),addWindow))
 			radiobutton.grid(row=i,column=0,sticky='nsew')
-			radiobutton.bind('<Return>', command= select())
+# 			radiobutton.bind('<Return>', lambda command: radiobutton.focus_set())
 		customAmount = tk.StringVar(additionType)
 		e3 = tk.Entry(additionType, textvariable = customAmount, width=5)
 		e3.grid(row=i, column = 1,sticky='nsew')
 		label = tk.Label(addWindow, text="Description:")
 		label.grid(row=7,column=0,sticky='w')
 		self.displayDescription(v.get(),addWindow)
+		
 		e1.bind('<Return>', lambda command: e2.focus_set())
 		button = tk.Button(addWindow, text = "Submit", command = lambda: self.addCategory_helper(e1.get(),e2.get(),addWindow, v.get(),e3.get()))
 		button.bind('<Return>', lambda command: self.addCategory_helper(e1.get(),e2.get(),addWindow, v.get(),e3.get()))
@@ -286,7 +296,7 @@ class FinanceTracker:
 	def displayDescription(self, num, window):
 		descriptions=["You will be given the amount proportional to the\nnumber of remaining days in the month.",
 					"You will be given the full month's budget.\n",
-					"You will receive your first deposite next month.\n",
+					"You will receive your first deposit next month.\n",
 					"Enter the amount you wish to start with.\n"]
 		self.clearItem(8, 0, window)
 		label = tk.Label(window, text = descriptions[num])
@@ -313,7 +323,7 @@ class FinanceTracker:
 			self.displayBudget()
 			self.displayChoices()
 		except:
-			self.displayBudget()
+			None
 	
 	def clearFrame(self):
 		gridItems = self.tkBudget.grid_slaves()
@@ -332,16 +342,32 @@ class FinanceTracker:
 
 		
 	def changeBudget_helper(self, amount, category):
-		try:
-			amount = float(amount)
-			difference = amount-self.budget[category]
-			adjustment = difference*self.proportionalUpdate()
-			self.logExpense_helper(adjustment, True)
-			self.budget[category]=round(amount,2)
-			self.displayBudget()
-			self.displayChoices()
-		except:
-			None
+		additionTypeWindow = tk.Tk()
+		additionTypeWindow.title("How To Update")
+		additionNames = ["Proportional","Entirety","Deferred","Custom Amount:"]
+		additionType = tk.Frame(additionTypeWindow)
+		additionType.grid(row=0,column=0,sticky='nsew')
+		description = tk.Frame(additionTypeWindow)
+		description.grid(row=1, column=0, sticky='nsew')
+		label = tk.Label(description, text = "Description:")
+		label.grid(row=0, column=0, sticky='nsew')
+		
+		v = tk.IntVar(additionType, value = 0)
+		for i, name in enumerate(additionNames):
+			radiobutton=tk.Radiobutton(additionType,text=name, anchor='w', variable=v, value = i, command = lambda v=v: self.displayDescription(v.get(),description))
+			radiobutton.grid(row=i,column=0,sticky='nsew')
+		self.displayDescription(v.get(),description)
+
+		# try:
+# 			amount = float(amount)
+# 			difference = amount-self.budget[category]
+# 			adjustment = difference*self.proportionalUpdate()
+# 			self.logExpense_helper(adjustment, True)
+# 			self.budget[category]=round(amount,2)
+# 			self.displayBudget()
+# 			self.displayChoices()
+# 		except:
+# 			None
 					
 	def deleteCategory(self):
 		if self.curCategory!=None:
